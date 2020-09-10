@@ -1,0 +1,31 @@
+##
+# Logbook function definition
+#
+# Original Author: Peter Reijnders <peter.reijnders@verpeteren.nl>
+# Contributors:
+#   - Scott Johnson <jaywir3@gmail.com>
+#
+# This defines the function 'lb' that is used to create a logbook entry in a
+# specified path (your home directory, by default).
+
+if [ -z ${LOGBOOK_PATH} ]
+then
+  LOGBOOK_PATH=${HOME}
+fi
+
+mkdir -p $LOGBOOK_PATH
+
+if [ "$#" -eq 1 ]
+then
+  fwrd_count=$((-1 * $1))
+
+  # The date command doesn't have a --date switch on MacOS systems
+  if [[ $(uname) == "Darwin" ]]
+  then
+    ${EDITOR} ${LOGBOOK_PATH}/$(date -v "${fwrd_count}d" "+%Y-%m-%d").md
+  else
+    ${EDITOR} ${LOGBOOK_PATH}/$(date --date="$fwrd_count days ago" "+%Y-%m-%d").md
+  fi
+else
+  ${EDITOR} ${LOGBOOK_PATH}/$(date "+%Y-%m-%d").md
+fi

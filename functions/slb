@@ -1,0 +1,53 @@
+##
+# Secure Logbook
+#
+# Contributors:
+#   - Peter Reijnders <peter.reijnders@verpeteren.nl>
+#   - Scott Johnson <jaywir3@gmail.com>
+#
+# This defines the function 'slb' that is used to create an encrypted logbook
+# entry in a specified path (your home directory, by default). This requires
+# that the following environment variables are defined:
+#
+# SECURE_IDENTITY - The email address for the person whose public key should be
+#                   used to encrypt the logbook entry. This must be in your gpg
+#                   key ring.
+# LOGBOOK_PATH - The path where the logbooks should be stored. (User's home
+#                directory by default)
+#
+# Dependencies:
+#  - vipe (Included in the moreutils package)
+
+if [ -z ${LOGBOOK_PATH} ]
+then
+  LOGBOOK_PATH=${HOME}
+fi
+
+SECURE_LOGBOOK_PATH=${LOGBOOK_PATH}/secure
+
+mkdir -p $SECURE_LOGBOOK_PATH
+
+if [ "$#" -eq 1 ]
+then
+  fwrd_count=$((-1 * $1))
+
+  # The date command doesn't have a --date switch on MacOS systems
+  if [[ $(uname) == "Darwin" ]]
+  then
+    logfile=${SECURE_LOGBOOK_PATH}/$(date -v "${fwrd_count}d" "+%Y-%m-%d").md
+  else
+    logfile=${SECURE_LOGBOOK_PATH}/$(date --date="$fwrd_count days ago" "+%Y-%m-%d").md
+  fi
+else
+  logfile=${SECURE_LOGBOOK_PATH}/$(date "+%Y-%m-%d").md
+fi
+
+if [[ -f "${logfile}" ]]
+then
+  # need to decrypt it and pipe to editor
+  gpg -d ${logfile} | vipe | gpg --batch --yes --output="${logfile}" --encrypt -r ${SECURE_IDENTITY}
+  # | vipe | gpg --encrypt -r ${SECURE_IDENTITY} --output ${logfile} --batch --yes
+else
+  # just open the editor and encrypt the contents to the file
+  vipe <&- | gpg --encrypt -r ${SECURE_IDENTITY} > $logfile
+fi
